@@ -133,6 +133,13 @@ int fhash(const char *fname, u8 *out) {
   return 0;
 }
 
+int fexists(const char *fname) {
+  FILE *f = fopen(fname, "rb");
+  int exists = !!f;
+  if (f) fclose(f);
+  return exists;
+}
+
 static const char hex[] = "0123456789abcdef";
 
 void bytes2hex(char *dest, u8 *src, u32 src_size) {

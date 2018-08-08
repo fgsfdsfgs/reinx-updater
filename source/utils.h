@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <switch.h>
 
 #ifndef MAX_PATH
 #define MAX_PATH 1024
@@ -17,6 +18,7 @@ char *dirname(const char *path);
 int mkpath(const char *path, mode_t mode);
 size_t fsize(FILE *f);
 int fhash(const char *fname, u8 *out);
+int fexists(const char *fname);
 
 void bytes2hex(char *dest, u8 *src, u32 src_size);
 void hex2bytes(u8 *dest, char *src);

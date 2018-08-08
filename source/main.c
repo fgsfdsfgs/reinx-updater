@@ -4,13 +4,13 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "utils.h"
 #include "unzip_utils.h"
 #include "version.h"
 #include "download.h"
-
-static const char *meta_url = "http://dootnode.org/reinx/meta.txt";
+#include "config.h"
 
 static void errormsg(const char *msg) {
   printf("ERROR: %s!\n", msg);
@@ -40,21 +40,45 @@ static version_t *default_version(void) {
   return ver;
 }
 
+static int ask(const char *format, ...) {
+  va_list args;
+  va_start(args, format);
+  vprintf(format, args);
+  va_end(args);
+
+  printf("\nA - yes, B - no\n");
+  u64 inp = wait_for_input();
+  // this actually means any button except A is `no`, but eh
+  return inp & KEY_A;
+}
+
 int main(int argc, char **argv) {
   init();
   atexit(die);
 
-  mkpath("./temp/update/", 0777);
+  mkdir("./temp", 0777);
 
   version_t *ver_cur = version_parse("./current.ver");
   if (!ver_cur) ver_cur = default_version();
   if (!ver_cur) return 2;
 
+  int nogc_old = fexists("/ReiNX/nogc");
+  int mitm_old = fexists("/ReiNX/sysmodules/fs_mitm.kip");
+
   printf("ReiNX sdfiles updater\n");
   printf("=======================\n\n");
-  printf("current version: %hhu.%hhu.%hhu\n\n",
+
+  if (config_load("./config.cfg")) {
+    printf("could not load config, saving default...\n");
+    if (config_save("./config.cfg"))
+      printf("error saving config to config.cfg\n");
+  }
+
+  printf("\ncurrent version: %hhu.%hhu.%hhu\n\n",
      ver_cur->triplet[0],  ver_cur->triplet[1],  ver_cur->triplet[2]
   );
+  printf("nogc:    %s\n", nogc_old ? "enabled" : "disabled");
+  printf("fs_mitm: %s\n\n", mitm_old ? "enabled" : "disabled");
   printf("press A to check for updates\n");
   printf("press any other button to quit\n");
 
@@ -67,7 +91,7 @@ int main(int argc, char **argv) {
   consoleClear();
   printf("downloading version file...\n");
 
-  if (download_file(meta_url, "./temp/new.ver")) {
+  if (download_file(cfg_meta_url, "./temp/new.ver")) {
     errormsg(download_error);
     return 4;
   }
@@ -142,15 +166,68 @@ int main(int argc, char **argv) {
     return 10;
   }
 
+  printf("extracting 'SD Files'...\n");
   zip_extract_dir(zip, "SD Files", "/");
+
+  consoleClear();
+
+  int install_extras = cfg_install_extras == 1 ||
+    (cfg_install_extras == 2 &&
+     ask("do you want to install juicy extras?\n"));
+
+  if (install_extras) {
+    consoleClear();
+    printf("extracting 'Meteos Recommends!'...\n");
+    zip_extract_dir(zip, "Meteos Recommends!", "/");
+  }
+
   zip_close(zip);
+
+  int remove_nogc = 0;
+  int remove_mitm = 0;
+
+  if (cfg_nogc_behavior == 2) {
+    consoleClear();
+    remove_nogc = !ask(
+      "do you want to enable the nogc patch?\nit is currently %s\n",
+      nogc_old ? "enabled" : "disabled"
+    );
+  } else {
+    remove_nogc = cfg_nogc_behavior == 1 && !nogc_old;
+  }
+
+  if (remove_nogc) {
+    printf("\nremoving /ReiNX/nogc...\n");
+    remove("/ReiNX/nogc");
+  }
+
+  if (cfg_mitm_behavior == 2) {
+    consoleClear();
+    remove_mitm = !ask(
+      "do you want to enable LayeredFS support (fs_mitm.kip)?\n"
+      "this may cause crashes in some homebrew applications and games\n"
+      "it is currently %s\n",
+      mitm_old ? "enabled" : "disabled"
+    );
+  } else {
+    remove_mitm = cfg_mitm_behavior == 1 && !mitm_old;
+  }
+
+  if (remove_mitm) {
+    if (fexists("/ReiNX/sysmodules/fs_mitm.kip.off"))
+      remove("/ReiNX/sysmodules/fs_mitm.kip.off");
+    printf("\nrenaming /ReiNX/sysmodules/fs_mitm.kip...\n");
+    rename("/ReiNX/sysmodules/fs_mitm.kip", "/ReiNX/sysmodules/fs_mitm.kip.off");
+  }
+
+  consoleClear();
 
   printf("clearing temp files...\n");
 
   remove("./current.ver");
   rename("./temp/new.ver", "./current.ver");
 
-  printf("done\npress any button to quit\n");
+  printf("\ndone\npress any button to quit\n");
   wait_for_input();
 
   return 0;
