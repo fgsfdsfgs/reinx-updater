@@ -109,21 +109,26 @@ size_t fsize(FILE *f) {
 }
 
 int fhash(const char *fname, u8 *out) {
-  static u8 buf[0x1000];
-  static SHA256_CTX sha;
+  SHA256_CTX sha;
 
   FILE *f = fopen(fname, "rb");
   if (!f) return -1;
 
-  sha256_init(&sha);
+  size_t sz = fsize(f);
+  if (!sz) { fclose(f); return -2; }
 
-  size_t sz = fread(buf, 1, sizeof(buf), f);
-  do {
-    sha256_update(&sha, buf, sz);
-  } while(sz == sizeof(buf));
+  u8 *buf = malloc(sz);
+  if (!buf) { fclose(f); return -3; }
 
-  sha256_final(&sha, out);
+  // fuck it, load the whole file in one go
+  fread(buf, sz, 1, f);
   fclose(f);
+
+  sha256_init(&sha);
+  sha256_update(&sha, buf, sz);
+  sha256_final(&sha, out);
+
+  free(buf);
 
   return 0;
 }
