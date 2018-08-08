@@ -7,13 +7,20 @@
 #include "utils.h"
 
 const char *download_error = NULL;
+static struct curl_slist *hosts = NULL;
 
 int download_init(void) {
   socketInitializeDefault();
-  return curl_global_init(CURL_GLOBAL_DEFAULT);
+  int r = curl_global_init(CURL_GLOBAL_DEFAULT);
+  if (r) return r;
+  hosts = curl_slist_append(NULL, "dootnode.org:80:91.121.75.178");
+  if (!hosts) return -999;
+  return 0;
 }
 
 void download_die(void) {
+  curl_slist_free_all(hosts);
+  hosts = NULL;
   curl_global_cleanup();
   socketExit();
 }
@@ -49,6 +56,9 @@ int download_file(const char *url, const char *to) {
     rurl++;
     memcpy(rurl, "http", 4);
   }
+
+  // custom hostname list for people with fucked up DNS
+  curl_easy_setopt(curl, CURLOPT_RESOLVE, hosts);
 
   curl_easy_setopt(curl, CURLOPT_URL, rurl);
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);

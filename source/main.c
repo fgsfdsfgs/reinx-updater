@@ -10,7 +10,7 @@
 #include "version.h"
 #include "download.h"
 
-static const char *meta_url = "http://localhost/meta.txt";
+static const char *meta_url = "http://dootnode.org/reinx/meta.txt";
 
 static void errormsg(const char *msg) {
   printf("ERROR: %s!\n", msg);
