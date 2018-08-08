@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
      ver_new->triplet[0],  ver_new->triplet[1],  ver_new->triplet[2]
   );
 
+  // TODO: actually check if it's newer just in case
   if (!memcmp(ver_cur->triplet, ver_new->triplet, 3)) {
     printf("\nyou already have the latest version\n");
     printf("press any button to quit\n");
@@ -141,7 +142,7 @@ int main(int argc, char **argv) {
     return 10;
   }
 
-  zip_extract_all(zip, "./temp/update");
+  zip_extract_dir(zip, "SD Files", "/");
   zip_close(zip);
 
   printf("clearing temp files...\n");

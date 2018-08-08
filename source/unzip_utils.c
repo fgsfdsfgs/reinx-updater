@@ -56,18 +56,27 @@ int zip_extract_dir(unzFile *zip, const char *zdir, const char *outdir) {
     return -2;
 
   int ret = unzGoToFirstFile(zip);
+  int zdir_len = zdir ? strlen(zdir) : 0;
   unz_file_info finfo;
   while (ret != UNZ_END_OF_LIST_OF_FILE) {
     unzGetCurrentFileInfo(zip, &finfo, filepath, MAX_PATH, NULL, 0, NULL, 0);
 
-    if (zdir && strncmp(zdir, dirname(filepath), MAX_PATH))
+    // very crappy way to filter by directory, but works in our case
+    if (zdir && strncmp(zdir, dirname(filepath), zdir_len)) {
+      ret = unzGoToNextFile(zip);
       continue;
+    }
 
-    snprintf(fullpath, MAX_PATH, "%s/%s", outdir, filepath);
+    // remove the first directory in filepath
+    char *fpath = filepath + zdir_len;
+
+    snprintf(fullpath, MAX_PATH, "%s/%s", outdir, fpath);
     mkpath(dirname(fullpath), 0777);
 
-    if (!zip_open_selected(zip))
+    if (!zip_open_selected(zip)) {
+      ret = unzGoToNextFile(zip);
       continue;
+    }
 
     int fno = open(fullpath, O_WRONLY | O_CREAT | O_TRUNC, 0777);
     if (fno >= 0) {
