@@ -87,5 +87,7 @@ int zip_extract_dir(unzFile *zip, const char *zdir, const char *outdir) {
     ret = unzGoToNextFile(zip);
   }
 
+  free(filebuf);
+
   return 0;
 }
