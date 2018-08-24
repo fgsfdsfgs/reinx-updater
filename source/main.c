@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
 
   printf("unzipping update.zip...\n");
 
-  unzFile *zip = zip_open("./temp/update.zip");
+  unzFile zip = zip_open("./temp/update.zip");
   if (!zip) {
     errormsg("failed to open update.zip");
     return 10;

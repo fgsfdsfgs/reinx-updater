@@ -9,42 +9,42 @@
 #include "unzip.h"
 #include "unzip_utils.h"
 
-unzFile *zip_open(const char *zname) {
+unzFile zip_open(const char *zname) {
   return unzOpen(zname);
 }
 
-void zip_close(unzFile *zip) {
+void zip_close(unzFile zip) {
   if (zip) unzClose(zip);
 }
 
-int zip_select_file(unzFile *zip, const char *zfname) {
+int zip_select_file(unzFile zip, const char *zfname) {
   return (unzLocateFile(zip, zfname, 0) != UNZ_END_OF_LIST_OF_FILE);
 }
 
-int zip_open_selected(unzFile *zip) {
+int zip_open_selected(unzFile zip) {
   return (unzOpenCurrentFile(zip) == UNZ_OK);
 }
 
-s64 zip_read_selected(unzFile *zip, void *buf, u64 bufsize) {
+s64 zip_read_selected(unzFile zip, void *buf, u64 bufsize) {
   return unzReadCurrentFile(zip, buf, bufsize);
 }
 
-u64 zip_size_selected(unzFile *zip) {
+u64 zip_size_selected(unzFile zip) {
   unz_file_info finfo;
   if (unzGetCurrentFileInfo(zip, &finfo, NULL, 0, NULL, 0, NULL, 0) != UNZ_OK)
     return 0;
   return finfo.uncompressed_size;
 }
 
-void zip_close_selected(unzFile *zip) {
+void zip_close_selected(unzFile zip) {
   unzCloseCurrentFile(zip);
 }
 
-int zip_extract_all(unzFile *zip, const char *outdir) {
+int zip_extract_all(unzFile zip, const char *outdir) {
   return zip_extract_dir(zip, NULL, outdir);
 }
 
-int zip_extract_dir(unzFile *zip, const char *zdir, const char *outdir) {
+int zip_extract_dir(unzFile zip, const char *zdir, const char *outdir) {
   char fullpath[MAX_PATH + 1];
   char filepath[MAX_PATH + 1];
 

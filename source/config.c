@@ -113,4 +113,5 @@ int config_save(const char *fname) {
   }
 
   fclose(f);
+  return 0;
 }
